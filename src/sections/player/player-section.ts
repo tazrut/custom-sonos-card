@@ -17,6 +17,10 @@ export class Player extends LitElement {
   @state() private imageLoaded = false;
   /** Speaker whose settings sheet is open (touch layout). */
   @state() private settingsPlayer?: MediaPlayer;
+  /** Side of the square artwork in the touch layout: the largest square that fits the space left. */
+  @state() private artSize = 0;
+  private artObserver?: ResizeObserver;
+  private observedCell?: Element;
   private lastTemplateUrl?: string;
   private lastCheckedImageUrl?: string;
 
@@ -55,7 +59,12 @@ export class Player extends LitElement {
           <div class="speaker" ?hidden=${!!this.store.config.player?.hideEntityName}>
             ${getSpeakerList(this.store.activePlayer, this.store.predefinedGroups)}
           </div>
-          <div class="artwork" ?hidden=${hideArtwork} style=${getArtworkStyle(this.store, this.imageLoaded, this.resolvedImageUrl)}></div>
+          <div class="art-cell" ?hidden=${hideArtwork}>
+            <div
+              class="artwork"
+              style="${getArtworkStyle(this.store, this.imageLoaded, this.resolvedImageUrl)};width:${this.artSize}px;height:${this.artSize}px"
+            ></div>
+          </div>
           <sonos-player-header
             class="header"
             touch
@@ -96,6 +105,32 @@ export class Player extends LitElement {
         ></sonos-player-controls>
       </div>
     `;
+  }
+
+  protected updated() {
+    // layout pixels, so this is unaffected by a CSS zoom on the card
+    const cell = this.shadowRoot?.querySelector('.art-cell') ?? undefined;
+    if (cell !== this.observedCell) {
+      this.artObserver?.disconnect();
+      this.observedCell = cell;
+      if (cell) {
+        this.artObserver = new ResizeObserver(([entry]) => {
+          // content box (without the cell padding), in layout pixels
+          const { width, height } = entry.contentRect;
+          const size = Math.max(0, Math.floor(Math.min(width, height)));
+          if (Math.abs(size - this.artSize) > 1) {
+            this.artSize = size;
+          }
+        });
+        this.artObserver.observe(cell);
+      }
+    }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.artObserver?.disconnect();
+    this.observedCell = undefined;
   }
 
   static get styles() {

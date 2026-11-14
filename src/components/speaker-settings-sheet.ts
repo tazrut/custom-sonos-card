@@ -6,6 +6,8 @@ import Store from '../model/store';
 import { MediaPlayer } from '../model/media-player';
 import { getEntityNameWithoutDevice } from '../utils/entity-name-utils';
 import { browserText, BrowserStringKey } from '../sections/media-browser/i18n';
+import './fast-scroller';
+import type { FastScroller } from './fast-scroller';
 
 const SLEEP_MINUTES = [15, 30, 45, 60, 90];
 
@@ -78,57 +80,70 @@ export class SpeakerSettingsSheet extends LitElement {
           </div>
           <button class="close" @click=${this.close} aria-label=${this.t('close')}><ha-svg-icon .path=${mdiClose}></ha-svg-icon></button>
         </div>
-        <div class="body">
-          ${
-            members.length > 1
-              ? html`<div class="chips members">
-                  ${members.map((m) => html`<button class="chip ${m.id === this.player.id ? 'on' : ''}" @click=${() => (this.player = m)}>${m.name}</button>`)}
-                </div>`
-              : nothing
-          }
-          ${this.entityIds === undefined ? html`<div class="loading"><ha-spinner size="small"></ha-spinner></div>` : nothing}
-          ${
-            numbers.length
-              ? html`<div class="section-label">${this.t('sound')}</div>
-                  ${numbers.map((e) => this.renderNumber(e))}`
-              : nothing
-          }
-          ${
-            switches.length || sensors.length
-              ? html`<div class="section-label">${this.t('options')}</div>
-                  ${switches.map((e) => this.renderSwitch(e))} ${sensors.map((e) => this.renderSensor(e))}`
-              : nothing
-          }
-          ${
-            sources.length
-              ? html`<div class="section-label">${this.t('source')}</div>
-                  <div class="chips">
-                    ${sources.map(
-                      (source) =>
-                        html`<button class="chip ${source === this.player.attributes.source ? 'on' : ''}" @click=${() => this.selectSource(source)}>
-                          ${source}
-                        </button>`,
-                    )}
+        <div class="body-wrap">
+          <sonos-fast-scroller></sonos-fast-scroller>
+          <div class="body">
+            ${
+              members.length > 1
+                ? html`<div class="chips members">
+                    ${members.map((m) => html`<button class="chip ${m.id === this.player.id ? 'on' : ''}" @click=${() => (this.player = m)}>${m.name}</button>`)}
                   </div>`
-              : nothing
-          }
-          ${
-            isSonos
-              ? html`<div class="section-label">${this.t('sleepTimer')}</div>
-                  <div class="chips">
-                    ${SLEEP_MINUTES.map((m) => html`<button class="chip" @click=${() => this.setSleep(m)}>${this.t('minutes', { count: m })}</button>`)}
-                    <button class="chip off" @click=${this.clearSleep}>${this.t('sleepOff')}</button>
-                  </div>`
-              : nothing
-          }
-          ${
-            this.entityIds !== undefined && !numbers.length && !switches.length && !sensors.length && !sources.length && !isSonos
-              ? html`<div class="empty">${this.t('noSettings')}</div>`
-              : nothing
-          }
+                : nothing
+            }
+            ${this.entityIds === undefined ? html`<div class="loading"><ha-spinner size="small"></ha-spinner></div>` : nothing}
+            ${
+              numbers.length
+                ? html`<div class="section-label">${this.t('sound')}</div>
+                    ${numbers.map((e) => this.renderNumber(e))}`
+                : nothing
+            }
+            ${
+              switches.length || sensors.length
+                ? html`<div class="section-label">${this.t('options')}</div>
+                    ${switches.map((e) => this.renderSwitch(e))} ${sensors.map((e) => this.renderSensor(e))}`
+                : nothing
+            }
+            ${
+              sources.length
+                ? html`<div class="section-label">${this.t('source')}</div>
+                    <div class="chips">
+                      ${sources.map(
+                        (source) =>
+                          html`<button class="chip ${source === this.player.attributes.source ? 'on' : ''}" @click=${() => this.selectSource(source)}>
+                            ${source}
+                          </button>`,
+                      )}
+                    </div>`
+                : nothing
+            }
+            ${
+              isSonos
+                ? html`<div class="section-label">${this.t('sleepTimer')}</div>
+                    <div class="chips">
+                      ${SLEEP_MINUTES.map((m) => html`<button class="chip" @click=${() => this.setSleep(m)}>${this.t('minutes', { count: m })}</button>`)}
+                      <button class="chip off" @click=${this.clearSleep}>${this.t('sleepOff')}</button>
+                    </div>`
+                : nothing
+            }
+            ${
+              this.entityIds !== undefined && !numbers.length && !switches.length && !sensors.length && !sources.length && !isSonos
+                ? html`<div class="empty">${this.t('noSettings')}</div>`
+                : nothing
+            }
+          </div>
         </div>
       </div>
     `;
+  }
+
+  protected updated() {
+    // wide touch scroll handle (the native scrollbar is a few px wide)
+    const scroller = this.shadowRoot?.querySelector<FastScroller>('sonos-fast-scroller');
+    const body = this.shadowRoot?.querySelector<HTMLElement>('.body');
+    if (scroller && body) {
+      scroller.target = body;
+      requestAnimationFrame(() => scroller.sync());
+    }
   }
 
   private renderNumber(entity: HassEntity) {
@@ -275,9 +290,23 @@ export class SpeakerSettingsSheet extends LitElement {
         background: rgba(127, 127, 127, 0.16);
         --mdc-icon-size: 26px;
       }
+      .body-wrap {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+      }
       .body {
+        flex: 1;
         overflow-y: auto;
         padding: 4px 14px 16px;
+        scrollbar-width: none;
+      }
+      .body::-webkit-scrollbar {
+        display: none;
+      }
+      sonos-fast-scroller:not([hidden]) + .body {
+        padding-right: 44px;
       }
       .loading,
       .empty {

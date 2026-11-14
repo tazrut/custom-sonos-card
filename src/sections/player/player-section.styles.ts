@@ -68,10 +68,7 @@ export const playerSectionStyles = css`
   }
 
   .container.touch {
-    /* the artwork is a square sized from the width, shrunk when the card is too short; spare height is spread evenly */
-    container-type: size;
-    align-content: space-evenly;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: min-content minmax(0, 1fr) min-content min-content;
     grid-template-areas:
       'speaker'
       'artwork'
@@ -83,7 +80,7 @@ export const playerSectionStyles = css`
   .touch .speaker {
     grid-area: speaker;
     text-align: center;
-    padding: 0.6rem 1rem 0.4rem;
+    padding: 0.6rem 1rem 0.2rem;
     font-size: calc(var(--sonos-font-size, 1rem) * 0.9);
     font-weight: 500;
     color: var(--secondary-text-color);
@@ -91,16 +88,22 @@ export const playerSectionStyles = css`
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* the artwork is the largest square that fits this cell (set from a ResizeObserver) */
+  .touch .art-cell {
+    grid-area: artwork;
+    min-height: 0;
+    padding: 0.4rem 0.75rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
   .touch .artwork {
-    justify-self: center;
-    align-self: center;
-    width: max(8rem, min(100% - 1.5rem, 100cqh - 22rem));
-    height: auto;
-    aspect-ratio: 1;
+    flex: none;
     min-height: 0 !important;
   }
   .touch .header {
-    margin: 0.6rem 0.75rem 0;
+    margin: 1.1rem 0.75rem 0;
     padding: 0.25rem 0.5rem;
   }
   .touch .controls {
