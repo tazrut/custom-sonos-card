@@ -8,11 +8,15 @@ import './player-header';
 import './player-progress';
 import '../../components/volume';
 import { getSpeakerList } from '../../utils/utils';
+import '../../components/speaker-settings-sheet';
+import { MediaPlayer } from '../../model/media-player';
 
 export class Player extends LitElement {
   @property({ attribute: false }) store!: Store;
   @state() private resolvedImageUrl?: string;
   @state() private imageLoaded = false;
+  /** Speaker whose settings sheet is open (touch layout). */
+  @state() private settingsPlayer?: MediaPlayer;
   private lastTemplateUrl?: string;
   private lastCheckedImageUrl?: string;
 
@@ -43,7 +47,11 @@ export class Player extends LitElement {
     if (touchLayout) {
       // sonos-card: touch layout: speaker, artwork, then title / artist / album, progress and controls below it
       return html`
-        <div class="container touch ${blurAmount > 0 ? 'blurred-background' : ''}" style=${containerStyle || nothing}>
+        <div
+          class="container touch ${blurAmount > 0 ? 'blurred-background' : ''}"
+          style=${containerStyle || nothing}
+          @open-speaker-settings=${(e: CustomEvent<{ player: MediaPlayer }>) => (this.settingsPlayer = e.detail.player)}
+        >
           <div class="speaker" ?hidden=${!!this.store.config.player?.hideEntityName}>
             ${getSpeakerList(this.store.activePlayer, this.store.predefinedGroups)}
           </div>
@@ -63,6 +71,15 @@ export class Player extends LitElement {
             ?hidden=${!!hideControls}
             style=${controlsMarginStyle || nothing}
           ></sonos-player-controls>
+          ${
+            this.settingsPlayer
+              ? html`<sonos-speaker-settings
+                  .store=${this.store}
+                  .player=${this.store.activePlayer.getMember(this.settingsPlayer.id) ?? this.store.activePlayer}
+                  @close=${() => (this.settingsPlayer = undefined)}
+                ></sonos-speaker-settings>`
+              : nothing
+          }
         </div>
       `;
     }

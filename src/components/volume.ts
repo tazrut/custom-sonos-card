@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import MediaControlService from '../services/media-control-service';
 import Store from '../model/store';
 import { CardConfig, PlayerConfig } from '../types';
-import { mdiMinus, mdiPlus, mdiPower, mdiVolumeHigh, mdiVolumeMute } from '@mdi/js';
+import { mdiCog, mdiMinus, mdiPlus, mdiPower, mdiVolumeHigh, mdiVolumeMute } from '@mdi/js';
 import { MediaPlayer } from '../model/media-player';
 import './icon-button';
 
@@ -69,6 +69,12 @@ class Volume extends LitElement {
           <sonos-icon-button .disabled=${disabled} @click=${this.volUp} .path=${mdiPlus}></sonos-icon-button>
           <div class="touch-value" hide=${this.playerConfig.hideVolumePercentage || nothing}>${volume}%</div>
           <sonos-icon-button hide=${this.store.hidePower()} @click=${this.togglePower} .path=${mdiPower}></sonos-icon-button>
+          <sonos-icon-button
+            class="settings"
+            hide=${this.config.volumes?.hideCogwheel || nothing}
+            @click=${this.openSettings}
+            .path=${mdiCog}
+          ></sonos-icon-button>
         </div>
       `;
     }
@@ -132,6 +138,7 @@ class Volume extends LitElement {
     return await this.mediaControlService.volumeSet(this.player, newVolume, this.updateMembers);
   }
 
+  private openSettings = () => this.dispatchEvent(new CustomEvent('open-speaker-settings', { detail: { player: this.player }, bubbles: true, composed: true }));
   private volDown = async () => await this.mediaControlService.volumeDown(this.player, this.updateMembers);
   private volUp = async () => await this.mediaControlService.volumeUp(this.player, this.updateMembers);
 
@@ -201,6 +208,11 @@ class Volume extends LitElement {
         align-self: center;
         --icon-button-size: 3rem;
         --icon-size: 1.8rem;
+      }
+      .touch sonos-icon-button.settings {
+        margin-left: 0.25rem;
+        border-radius: 50%;
+        background: rgba(127, 127, 127, 0.16);
       }
       .touch sonos-icon-button.muted {
         color: var(--error-color, #db4437);
