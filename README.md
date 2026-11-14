@@ -341,6 +341,7 @@ player:
   showSource: true # default is false. Will show the source (if available) in the player section.
   showVolumeUpAndDownButtons: true # default is false, shows buttons for increasing and decreasing volume
   stopInsteadOfPause: true # default is false. Will show the stop button instead of the pause button when media is playing.
+  touchLayout: true # default is false (true for the sonos-touch-card build). Artwork on top, then a large title / artist / album, a thick draggable progress bar with the times underneath, bigger buttons with shuffle and repeat coloured when on, and volume - / + buttons.
 ```
 
 ### Media Browser Configuration

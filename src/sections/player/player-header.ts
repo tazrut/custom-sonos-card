@@ -9,7 +9,13 @@ import { styleMap } from 'lit/directives/style-map.js';
 class PlayerHeader extends LitElement {
   @property({ attribute: false }) store!: Store;
 
+  /** Touch layout: title, artist and album on separate lines under the artwork, larger text. */
+  @property({ type: Boolean }) touch = false;
+
   render() {
+    if (this.touch) {
+      return this.renderTouch();
+    }
     const { headerEntityFontSize, headerSongFontSize, hideEntityName, hideArtistAlbum, showAudioInputFormat } = this.store.config.player ?? {};
     const entityStyle = headerEntityFontSize ? { fontSize: `${headerEntityFontSize}rem` } : {};
     const songStyle = headerSongFontSize ? { fontSize: `${headerSongFontSize}rem` } : {};
@@ -22,6 +28,28 @@ class PlayerHeader extends LitElement {
       <div class="artist-album" ?hidden=${!!hideArtistAlbum}>${this.getAlbum()} ${when(showAudioInputFormat, () => until(this.getAudioInputFormat()))}</div>
       <sonos-progress .store=${this.store}></sonos-progress>
     </div>`;
+  }
+
+  private renderTouch() {
+    const { headerSongFontSize, hideArtistAlbum, showAudioInputFormat } = this.store.config.player ?? {};
+    const attrs = this.store.activePlayer.attributes;
+    const title = attrs.media_title ? this.getTitleWithSource(attrs.media_title) : this.getSong();
+    const artist = attrs.media_title ? attrs.media_artist : '';
+    const songStyle = headerSongFontSize ? { fontSize: `${headerSongFontSize}rem` } : {};
+    return html`<div class="info touch">
+      <div class="t-title" style=${styleMap(songStyle)}>${title}</div>
+      <div class="t-artist" ?hidden=${!artist}>${artist}</div>
+      <div class="t-album" ?hidden=${!!hideArtistAlbum || !this.getAlbum()}>
+        ${this.getAlbum()} ${when(showAudioInputFormat, () => until(this.getAudioInputFormat()))}
+      </div>
+      <sonos-progress touch .store=${this.store}></sonos-progress>
+    </div>`;
+  }
+
+  private getTitleWithSource(title: string) {
+    const { showSource } = this.store.config.player ?? {};
+    const source = this.store.activePlayer.attributes.source;
+    return showSource && source ? `${title} (${source})` : title;
   }
 
   private getSong() {
@@ -92,6 +120,39 @@ class PlayerHeader extends LitElement {
         line-height: normal;
         padding: 3px;
         margin-left: 8px;
+      }
+
+      .touch .t-title {
+        font-size: calc(var(--sonos-font-size, 1rem) * 1.6);
+        font-weight: 600;
+        line-height: 1.2;
+        color: var(--primary-text-color);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+      }
+      .touch .t-artist {
+        margin-top: 0.2rem;
+        font-size: calc(var(--sonos-font-size, 1rem) * 1.25);
+        font-weight: 500;
+        color: var(--accent-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .touch .t-album {
+        margin-top: 0.1rem;
+        font-size: calc(var(--sonos-font-size, 1rem) * 1);
+        color: var(--secondary-text-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .touch sonos-progress {
+        display: block;
+        margin-top: 0.5rem;
       }
 
       [hidden] {

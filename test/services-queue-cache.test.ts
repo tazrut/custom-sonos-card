@@ -35,4 +35,19 @@ describe('Sonos queue cache', () => {
     await expect(service.getQueue(player)).rejects.toThrow();
     expect(callWS).toHaveBeenCalledTimes(1);
   });
+
+  it('shows only the title when the track has no artist (no "null - title")', async () => {
+    const callWS = vi.fn(async () => ({
+      response: {
+        'media_player.noartist': [
+          { media_artist: null, media_title: 'Imin', media_content_id: 'a', media_content_type: 'music' },
+          { media_artist: 'Idir', media_title: 'Tagrawla', media_content_id: 'b', media_content_type: 'music' },
+        ],
+      },
+    }));
+    const service = new HassService({ callWS, states: {} } as never, 'queue' as never, document.createElement('div'));
+    (service as unknown as { isMusicAssistant: () => boolean }).isMusicAssistant = () => false;
+    const items = await service.getQueue({ id: 'media_player.noartist', attributes: { queue_size: 2, shuffle: false } } as never);
+    expect(items.map((i) => i.title)).toEqual(['Imin', 'Idir - Tagrawla']);
+  });
 });

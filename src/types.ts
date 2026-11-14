@@ -94,6 +94,8 @@ export interface PlayerConfig {
   showSource?: boolean;
   showVolumeUpAndDownButtons?: boolean;
   stopInsteadOfPause?: boolean;
+  /** Touch layout: artwork on top, big title, thick draggable progress bar, volume -/+ (default on for sonos-touch-card). */
+  touchLayout?: boolean;
   volumeEntityId?: string;
   volumeMuteButtonSize?: number;
   volumeSliderHeight?: number;

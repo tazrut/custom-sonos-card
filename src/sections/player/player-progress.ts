@@ -11,6 +11,10 @@ class PlayerProgress extends LitElement {
   @query('.bar')
   private progressBar?: HTMLElement;
   private mediaDuration = 0;
+  /** Touch layout: thick draggable bar with the times underneath. */
+  @property({ type: Boolean }) touch = false;
+  /** Position being dragged to (0..1), shown instead of the playing position until the seek is sent. */
+  @state() private dragRatio?: number;
 
   disconnectedCallback() {
     if (this.tracker) {
@@ -26,6 +30,9 @@ class PlayerProgress extends LitElement {
     if (showProgress) {
       this.trackProgress();
     }
+    if (this.touch) {
+      return this.renderTouch(showProgress);
+    }
     return html`
       <div class="progress" ?hidden=${!showProgress}>
         <span>${convertProgress(this.playingProgress)}</span>
@@ -36,6 +43,68 @@ class PlayerProgress extends LitElement {
       </div>
     `;
   }
+
+  private renderTouch(showProgress: boolean) {
+    const duration = this.mediaDuration;
+    const played = this.dragRatio !== undefined ? this.dragRatio * duration : this.playingProgress;
+    const ratio = duration > 0 ? Math.min(1, Math.max(0, played / duration)) : 0;
+    const percent = `${ratio * 100}%`;
+    return html`
+      <div class="touch-progress ${this.dragRatio !== undefined ? 'dragging' : ''}" ?hidden=${!showProgress}>
+        <div
+          class="touch-track"
+          @pointerdown=${this.onPointerDown}
+          @pointermove=${this.onPointerMove}
+          @pointerup=${this.onPointerUp}
+          @pointercancel=${this.onPointerCancel}
+        >
+          <div class="touch-rail"><div class="touch-fill" style="width:${percent}"></div></div>
+          <div class="touch-knob" style="left:${percent}"></div>
+        </div>
+        <div class="touch-times">
+          <span>${convertProgress(played)}</span>
+          <span>-${convertProgress(duration - played)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  /** Ratio along the track from a pointer position; rect and clientX are both visual pixels, so CSS zoom is fine. */
+  private ratioAt(ev: PointerEvent) {
+    const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    return rect.width > 0 ? Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width)) : 0;
+  }
+
+  private onPointerDown = (ev: PointerEvent) => {
+    if (!this.mediaDuration) {
+      return;
+    }
+    ev.preventDefault();
+    (ev.currentTarget as HTMLElement).setPointerCapture?.(ev.pointerId);
+    this.dragRatio = this.ratioAt(ev);
+  };
+
+  private onPointerMove = (ev: PointerEvent) => {
+    if (this.dragRatio !== undefined) {
+      this.dragRatio = this.ratioAt(ev);
+    }
+  };
+
+  private onPointerUp = async (ev: PointerEvent) => {
+    if (this.dragRatio === undefined) {
+      return;
+    }
+    const ratio = this.ratioAt(ev);
+    (ev.currentTarget as HTMLElement).releasePointerCapture?.(ev.pointerId);
+    const position = this.mediaDuration * ratio;
+    this.playingProgress = position;
+    this.dragRatio = undefined;
+    await this.store.mediaControlService.seek(this.store.activePlayer, position);
+  };
+
+  private onPointerCancel = () => {
+    this.dragRatio = undefined;
+  };
 
   private async handleSeek(e: MouseEvent) {
     const progressWidth = this.progressBar!.offsetWidth;
@@ -84,6 +153,66 @@ class PlayerProgress extends LitElement {
         align-items: center;
         padding: 5px;
         cursor: pointer;
+      }
+
+      .touch-progress {
+        width: 100%;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .touch-track {
+        position: relative;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .touch-rail {
+        position: relative;
+        flex: 1;
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: rgba(127, 127, 127, 0.3);
+      }
+      .touch-fill {
+        height: 100%;
+        background: var(--accent-color);
+        transition: width 0.25s linear;
+      }
+      .touch-knob {
+        position: absolute;
+        top: 50%;
+        width: 18px;
+        height: 18px;
+        margin: -9px 0 0 -9px;
+        border-radius: 50%;
+        background: var(--accent-color);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        transition:
+          left 0.25s linear,
+          transform 0.15s;
+      }
+      .dragging .touch-fill,
+      .dragging .touch-knob {
+        transition: none;
+      }
+      .dragging .touch-knob {
+        transform: scale(1.4);
+      }
+      .touch-times {
+        display: flex;
+        justify-content: space-between;
+        margin-top: -2px;
+        font-size: calc(var(--sonos-font-size, 1rem) * 1.05);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        color: var(--secondary-text-color);
+      }
+      .dragging .touch-times span:first-child {
+        color: var(--accent-color);
       }
 
       .progress-bar {

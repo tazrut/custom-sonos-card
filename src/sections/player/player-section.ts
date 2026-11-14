@@ -7,6 +7,7 @@ import './player-controls';
 import './player-header';
 import './player-progress';
 import '../../components/volume';
+import { getSpeakerList } from '../../utils/utils';
 
 export class Player extends LitElement {
   @property({ attribute: false }) store!: Store;
@@ -27,6 +28,7 @@ export class Player extends LitElement {
       controlsMargin,
       hideHeader,
       hideControls,
+      touchLayout,
     } = this.store.config.player ?? {};
     const hasRealArtwork = getArtworkImage(this.store, this.resolvedImageUrl).entityImage && this.imageLoaded;
     const artworkAsBackground = (!!artworkAsBackgroundConfig || blurAmount > 0) && hasRealArtwork;
@@ -38,6 +40,32 @@ export class Player extends LitElement {
       : '';
     const hideArtwork = (artworkAsBackground && !blurAmount) || !!hideArtworkConfig;
     const controlsMarginStyle = controlsMargin ? `margin: ${controlsMargin}` : '';
+    if (touchLayout) {
+      // sonos-card: touch layout: speaker, artwork, then title / artist / album, progress and controls below it
+      return html`
+        <div class="container touch ${blurAmount > 0 ? 'blurred-background' : ''}" style=${containerStyle || nothing}>
+          <div class="speaker" ?hidden=${!!this.store.config.player?.hideEntityName}>
+            ${getSpeakerList(this.store.activePlayer, this.store.predefinedGroups)}
+          </div>
+          <div class="artwork" ?hidden=${hideArtwork} style=${getArtworkStyle(this.store, this.imageLoaded, this.resolvedImageUrl)}></div>
+          <sonos-player-header
+            class="header"
+            touch
+            background=${artworkAsBackground || nothing}
+            .store=${this.store}
+            ?hidden=${!!hideHeader}
+          ></sonos-player-header>
+          <sonos-player-controls
+            class="controls"
+            touch
+            background=${artworkAsBackground || nothing}
+            .store=${this.store}
+            ?hidden=${!!hideControls}
+            style=${controlsMarginStyle || nothing}
+          ></sonos-player-controls>
+        </div>
+      `;
+    }
     return html`
       <div class="container ${blurAmount > 0 ? 'blurred-background' : ''}" style=${containerStyle || nothing}>
         <sonos-player-header class="header" background=${artworkAsBackground || nothing} .store=${this.store} ?hidden=${!!hideHeader}></sonos-player-header>

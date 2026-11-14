@@ -115,7 +115,7 @@ export default class HassService {
     const queueItems = ret.response[mediaPlayer.id];
     return queueItems.map((item) => {
       return {
-        title: `${item.media_artist} - ${item.media_title}`,
+        title: item.media_artist ? `${item.media_artist} - ${item.media_title}` : (item.media_title ?? ''),
         media_content_id: item.media_content_id,
         media_content_type: item.media_content_type,
       };

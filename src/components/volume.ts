@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import MediaControlService from '../services/media-control-service';
 import Store from '../model/store';
 import { CardConfig, PlayerConfig } from '../types';
-import { mdiPower, mdiVolumeHigh, mdiVolumeMute } from '@mdi/js';
+import { mdiMinus, mdiPlus, mdiPower, mdiVolumeHigh, mdiVolumeMute } from '@mdi/js';
 import { MediaPlayer } from '../model/media-player';
 import './icon-button';
 
@@ -17,6 +17,8 @@ class Volume extends LitElement {
   @property() volumeClicked?: () => void;
   @property() slim: boolean = false;
   @property() isPlayer: boolean = false;
+  /** Touch layout: [mute] [-] slider [+] [value], no 0% / 100% labels. */
+  @property({ type: Boolean }) touch = false;
   @state() private sliderMoving: boolean = false;
   @state() private startVolumeSliderMoving: number = 0;
   private togglePower = async () => await this.mediaControlService.togglePower(this.player);
@@ -42,6 +44,34 @@ class Volume extends LitElement {
       iconButtonSize ? `--icon-button-size: ${iconButtonSize}rem;--icon-size: ${iconButtonSize * 0.75}rem;` : '',
     ].join('');
     const sliderStyle = sliderHeight ? `--control-slider-thickness: ${sliderHeight}rem;` : '';
+    if (this.touch) {
+      return html`
+        <div class="volume touch">
+          <sonos-icon-button
+            .disabled=${disabled}
+            @click=${this.mute}
+            .path=${muteIcon}
+            class=${isMuted ? 'muted' : ''}
+            hide=${this.playerConfig.hideVolumeMuteButton || nothing}
+          ></sonos-icon-button>
+          <sonos-icon-button .disabled=${disabled} @click=${this.volDown} .path=${mdiMinus}></sonos-icon-button>
+          <div class="volume-slider">
+            <ha-control-slider
+              .value=${volume}
+              max=${max}
+              @value-changed=${this.volumeChanged}
+              @slider-moved=${this.sliderMoved}
+              .disabled=${disabled}
+              class=${this.config.dynamicVolumeSlider && max === 100 ? 'over-threshold' : ''}
+              style=${sliderStyle}
+            ></ha-control-slider>
+          </div>
+          <sonos-icon-button .disabled=${disabled} @click=${this.volUp} .path=${mdiPlus}></sonos-icon-button>
+          <div class="touch-value" hide=${this.playerConfig.hideVolumePercentage || nothing}>${volume}%</div>
+          <sonos-icon-button hide=${this.store.hidePower()} @click=${this.togglePower} .path=${mdiPower}></sonos-icon-button>
+        </div>
+      `;
+    }
     return html`
       <div class="volume" slim=${this.slim || nothing}>
         <sonos-icon-button
@@ -102,6 +132,9 @@ class Volume extends LitElement {
     return await this.mediaControlService.volumeSet(this.player, newVolume, this.updateMembers);
   }
 
+  private volDown = async () => await this.mediaControlService.volumeDown(this.player, this.updateMembers);
+  private volUp = async () => await this.mediaControlService.volumeUp(this.player, this.updateMembers);
+
   private async mute() {
     return await this.mediaControlService.toggleMute(this.player, this.updateMembers);
   }
@@ -157,6 +190,32 @@ class Volume extends LitElement {
       .percentage-slim {
         font-weight: bold;
         align-self: center;
+      }
+
+      .volume.touch {
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .touch sonos-icon-button {
+        height: auto;
+        align-self: center;
+        --icon-button-size: 3rem;
+        --icon-size: 1.8rem;
+      }
+      .touch sonos-icon-button.muted {
+        color: var(--error-color, #db4437);
+      }
+      .touch .volume-slider {
+        padding: 0 0.25rem;
+        --control-slider-thickness: 3rem;
+        --control-slider-border-radius: 1.5rem;
+      }
+      .touch-value {
+        min-width: 3.2rem;
+        text-align: right;
+        font-weight: 600;
+        font-size: calc(var(--sonos-font-size, 1rem) * 1.15);
+        font-variant-numeric: tabular-nums;
       }
 
       *[hide] {

@@ -19,6 +19,8 @@ import '../../components/icon-button';
 
 class PlayerControls extends LitElement {
   @property({ attribute: false }) store!: Store;
+  /** Touch layout: bigger buttons, shuffle/repeat coloured when on, volume with -/+ buttons. */
+  @property({ type: Boolean }) touch = false;
 
   render() {
     const {
@@ -46,11 +48,11 @@ class PlayerControls extends LitElement {
     const controlsColorStyle = controlsColor ? `--controls-color: ${controlsColor}` : '';
     return html`
       <div class="main" id="mediaControls" style=${controlsColorStyle || nothing}>
-        <div class="icons ${controlsLargeIcons ? 'large-icons' : ''}">
+        <div class="icons ${controlsLargeIcons ? 'large-icons' : ''} ${this.touch ? 'touch-icons' : ''}">
           <div class="flex-1">
             <sonos-player-favorite-button ?hidden=${!!hideControlFavoriteButton} .store=${this.store}></sonos-player-favorite-button>
           </div>
-          <sonos-icon-button ?hidden=${!showVolumeUpAndDownButtons} @click=${this.volDown} .path=${mdiVolumeMinus}></sonos-icon-button>
+          <sonos-icon-button ?hidden=${!showVolumeUpAndDownButtons || this.touch} @click=${this.volDown} .path=${mdiVolumeMinus}></sonos-icon-button>
           <sonos-shuffle ?hidden=${!!hideControlShuffleButton} .store=${this.store}></sonos-shuffle>
           <sonos-icon-button ?hidden=${!!hideControlPrevTrackButton} @click=${this.prev} .path=${mdiSkipPrevious}></sonos-icon-button>
           <sonos-icon-button ?hidden=${!showFastForwardAndRewindButtons} @click=${this.rewind} .path=${mdiRewind}></sonos-icon-button>
@@ -58,7 +60,7 @@ class PlayerControls extends LitElement {
           <sonos-icon-button ?hidden=${!showFastForwardAndRewindButtons} @click=${this.fastForward} .path=${mdiFastForward}></sonos-icon-button>
           <sonos-icon-button ?hidden=${!!hideControlNextTrackButton} @click=${this.next} .path=${mdiSkipNext}></sonos-icon-button>
           <sonos-repeat ?hidden=${!!hideControlRepeatButton} .store=${this.store}></sonos-repeat>
-          <sonos-icon-button ?hidden=${!showVolumeUpAndDownButtons} @click=${this.volUp} .path=${mdiVolumePlus}></sonos-icon-button>
+          <sonos-icon-button ?hidden=${!showVolumeUpAndDownButtons || this.touch} @click=${this.volUp} .path=${mdiVolumePlus}></sonos-icon-button>
           <div class="flex-1">
             <sonos-icon-button
               class="browse-button"
@@ -73,6 +75,7 @@ class PlayerControls extends LitElement {
           .player=${volumePlayer}
           .updateMembers=${updateMemberVolumes}
           .isPlayer=${true}
+          .touch=${this.touch}
           ?hidden=${!!hideVolume}
         ></sonos-volume>
         <div class="icons">
@@ -146,6 +149,28 @@ class PlayerControls extends LitElement {
       .large-icons .big-icon {
         --icon-size: 5rem;
         --icon-button-size: 5rem;
+      }
+      .touch-icons {
+        margin: 0.25rem 0 0.5rem;
+        gap: 0.5rem;
+      }
+      .touch-icons sonos-icon-button,
+      .touch-icons sonos-shuffle,
+      .touch-icons sonos-repeat {
+        --icon-button-size: 3.5rem;
+        --icon-size: 2.4rem;
+      }
+      .touch-icons .big-icon {
+        --icon-button-size: 5.5rem;
+        --icon-size: 5.5rem;
+      }
+      .icons.touch-icons sonos-shuffle,
+      .icons.touch-icons sonos-repeat {
+        color: var(--secondary-text-color);
+      }
+      .icons.touch-icons sonos-shuffle[active],
+      .icons.touch-icons sonos-repeat[active] {
+        color: var(--accent-color);
       }
       .flex-1 {
         flex: 1;

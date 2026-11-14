@@ -14,6 +14,8 @@ class Repeat extends LitElement {
   render() {
     this.activePlayer = this.store.activePlayer;
     this.mediaControlService = this.store.mediaControlService;
+    // sonos-card: lets the touch layout colour the button while it is on
+    this.toggleAttribute('active', !!this.activePlayer?.attributes.repeat && this.activePlayer.attributes.repeat !== 'off');
 
     return html`<sonos-icon-button @click=${this.repeat} .path=${this.repeatIcon()}></sonos-icon-button> `;
   }

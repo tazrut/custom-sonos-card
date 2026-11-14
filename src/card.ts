@@ -243,6 +243,10 @@ export class Card extends LitElement {
       this.section = PLAYER;
     }
 
+    // the touch build (custom:sonos-touch-card) uses the touch player layout by default
+    if (/touch-card$/.test((newConfig as { type?: string }).type ?? '') && newConfig.player?.touchLayout === undefined) {
+      newConfig.player = { ...(newConfig.player ?? {}), touchLayout: true };
+    }
     newConfig.mediaBrowser = newConfig.mediaBrowser ?? {};
     newConfig.mediaBrowser.favorites = newConfig.mediaBrowser.favorites ?? {};
     newConfig.mediaBrowser.itemsPerRow = newConfig.mediaBrowser.itemsPerRow || 4;

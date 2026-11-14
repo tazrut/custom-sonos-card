@@ -14,6 +14,8 @@ class Shuffle extends LitElement {
   render() {
     this.activePlayer = this.store.activePlayer;
     this.mediaControlService = this.store.mediaControlService;
+    // sonos-card: lets the touch layout colour the button while it is on
+    this.toggleAttribute('active', !!this.activePlayer?.attributes.shuffle);
 
     return html`<sonos-icon-button @click=${this.shuffle} .path=${this.shuffleIcon()}></sonos-icon-button> `;
   }
